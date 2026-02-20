@@ -1,0 +1,185 @@
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { postsApi } from '../services/api';
+
+export default function EditPost() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [post, setPost] = useState(null);
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [featuredImage, setFeaturedImage] = useState('');
+  const [category, setCategory] = useState('general');
+  const [status, setStatus] = useState('draft');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [loadingPost, setLoadingPost] = useState(true);
+  const [showPreview, setShowPreview] = useState(false);
+
+  useEffect(() => {
+    if (!id) return;
+    postsApi
+      .getById(id)
+      .then((res) => {
+        const p = res.post;
+        if (p) {
+          setPost(p);
+          setTitle(p.title);
+          setContent(p.content || '');
+          setFeaturedImage(p.featured_image || '');
+          setCategory(p.category || 'general');
+          setStatus(p.status || 'draft');
+        } else {
+          setError('Post not found');
+        }
+      })
+      .catch(() => setError('Failed to load post'))
+      .finally(() => setLoadingPost(false));
+  }, [id]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      await postsApi.update(id, {
+        title,
+        content,
+        featured_image: featuredImage || null,
+        category,
+        status,
+      });
+      navigate('/admin/dashboard');
+    } catch (err) {
+      setError(err.error || err.message || 'Failed to update post');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loadingPost) return <main className="max-w-3xl mx-auto px-4 py-12"><p className="text-slate-500">Loading...</p></main>;
+  if (error && !post) return <main className="max-w-3xl mx-auto px-4 py-12"><p className="text-red-600">{error}</p><button type="button" onClick={() => navigate('/admin/dashboard')} className="text-blue-600 hover:underline">Back to dashboard</button></main>;
+
+  return (
+    <main className="max-w-5xl mx-auto px-4 py-12">
+      <h1 className="text-2xl font-bold text-slate-800 mb-6">Edit post</h1>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <section>
+          <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow-sm border border-slate-100">
+            {error && <p className="text-red-600 text-sm">{error}</p>}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Title</label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
+                className="w-full px-3 py-2 border border-slate-300 rounded focus:ring-2 focus:ring-slate-500"
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium text-slate-700">Content (HTML supported)</label>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-500">{content.length} chars</span>
+                  <button type="button" onClick={() => setShowPreview((s) => !s)} className="text-xs text-slate-600 hover:underline">{showPreview ? 'Hide preview' : 'Show preview'}</button>
+                </div>
+              </div>
+              <textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                rows={12}
+                className="w-full px-3 py-2 border border-slate-300 rounded focus:ring-2 focus:ring-slate-500 font-mono text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Featured image URL</label>
+              <input
+                type="url"
+                value={featuredImage}
+                onChange={(e) => setFeaturedImage(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded focus:ring-2 focus:ring-slate-500"
+                placeholder="https://..."
+              />
+              <p className="text-xs text-slate-500 mt-2">Paste a direct image URL; it will be shown in the preview.</p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded focus:ring-2 focus:ring-slate-500"
+                >
+                  <option value="generic">Generic</option>
+                  <option value="crop-production">Crop Production</option>
+                  <option value="livestock-production">Livestock Production</option>
+                  <option value="agricultural-engineering">Agricultural Engineering</option>
+                  <option value="agricultural-economics">Agricultural Economics</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded focus:ring-2 focus:ring-slate-500"
+                >
+                  <option value="draft">Draft</option>
+                  <option value="published">Published</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-4 py-2 bg-slate-800 text-white rounded font-medium hover:bg-slate-700 disabled:opacity-50"
+              >
+                {loading ? 'Saving...' : 'Save'}
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/admin/dashboard')}
+                className="px-4 py-2 bg-slate-200 text-slate-800 rounded font-medium hover:bg-slate-300"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <aside className="space-y-4">
+          <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-100">
+            <h2 className="text-sm font-semibold text-slate-700 mb-3">Preview</h2>
+            {featuredImage ? (
+              <img src={featuredImage} alt="Featured" className="w-full h-56 object-cover rounded-md mb-3 border border-slate-200" />
+            ) : (
+              <div className="w-full h-56 bg-slate-100 rounded-md flex items-center justify-center text-slate-400 mb-3 border border-dashed border-slate-200">No image</div>
+            )}
+
+            <h3 className="text-lg font-semibold text-slate-800 mb-1">{title || 'Untitled'}</h3>
+            <p className="text-xs text-slate-500 mb-3">{post?.created_at ? new Date(post.created_at).toLocaleDateString() : ''}</p>
+
+            {showPreview ? (
+              <div className="prose prose-slate max-w-none overflow-hidden" dangerouslySetInnerHTML={{ __html: content || '<p><em>No content</em></p>' }} />
+            ) : (
+              <p className="text-sm text-slate-600 line-clamp-6">{(post?.excerpt || '') || (content.replace(/<[^>]*>/g, '').slice(0, 300) + (content.length > 300 ? '…' : ''))}</p>
+            )}
+          </div>
+
+          <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-100 text-sm text-slate-600">
+            <p><span className="font-medium text-slate-800">Category:</span> <span className="ml-1">{category}</span></p>
+            <p className="mt-2"><span className="font-medium text-slate-800">Status:</span> <span className="ml-1">{status}</span></p>
+            <p className="mt-2 text-xs text-slate-500">Tip: Click "Show preview" to render HTML content live.</p>
+          </div>
+        </aside>
+      </div>
+    </main>
+  );
+}
