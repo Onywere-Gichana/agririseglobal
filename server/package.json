@@ -21,6 +21,7 @@
     "express-rate-limit": "^8.2.1",
     "jsdom": "^28.1.0",
     "jsonwebtoken": "^9.0.3",
+    "multer": "^2.3.0",
     "pg": "^8.18.0"
   },
   "devDependencies": {

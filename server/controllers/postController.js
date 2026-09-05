@@ -1,10 +1,16 @@
 const pool = require('../config/db');
+const { JSDOM } = require('jsdom');
+const createDOMPurify = require('dompurify');
+
+const DOMPurify = createDOMPurify(new JSDOM('').window);
 
 const slugify = (text) =>
   text
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '');
+
+  const sanitizeContent = (content) => DOMPurify.sanitize(content, { ADD_ATTR: ['target'] });
 
 // Public: list published posts (paginated)
 const getPosts = async (req, res) => {
@@ -102,9 +108,10 @@ const createPost = async (req, res) => {
       slug = `${slug}-${Date.now()}`;
     }
 
+    const cleanContent = sanitizeContent(content);
     const result = await pool.query(
       'INSERT INTO posts (title, content, slug, featured_image, category, status, source) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-      [title, content, slug, featured_image || null, category || 'general', status || 'draft', 'native']
+      [title, cleanContent, slug, featured_image || null, category || 'general', status || 'draft', 'native']
     );
 
     res.status(201).json({ post: result.rows[0] });
@@ -126,7 +133,7 @@ const updatePost = async (req, res) => {
 
     const post = existing.rows[0];
     const newTitle = title || post.title;
-    const newContent = content || post.content;
+    const newContent = content ? sanitizeContent(content) : post.content;
     const newImage = featured_image !== undefined ? featured_image : post.featured_image;
     const newCategory = category !== undefined ? category : (post.category || 'general');
     const newStatus = status || post.status;

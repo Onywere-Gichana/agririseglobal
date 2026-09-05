@@ -7,3 +7,21 @@ body {
   min-height: 100vh;
   font-family: system-ui, -apple-system, sans-serif;
 }
+
+.rich-text-editor .ProseMirror {
+  min-height: 280px;
+  outline: none;
+}
+
+.rich-text-editor .ProseMirror p.is-editor-empty:first-child::before {
+  color: #94a3b8;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.rich-text-editor .ProseMirror img {
+  max-width: 100%;
+  height: auto;
+}

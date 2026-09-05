@@ -24,3 +24,6 @@ Thumbs.db
 
 # Docker
 postgres_data/
+
+# Uploaded images
+server/uploads/

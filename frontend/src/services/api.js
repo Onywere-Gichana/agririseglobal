@@ -66,6 +66,22 @@ export const postsApi = {
   delete: (id) => request(`/api/posts/${id}`, { method: 'DELETE' }),
 };
 
+export const uploadApi = {
+  image: async (file) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    const token = getToken();
+    const res = await fetch(`${API_BASE}/api/uploads`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw data;
+    return data;
+  },
+};
+
 export const wordpressApi = {
   sync: () => request('/api/wordpress/sync', { method: 'POST' }),
 };

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { postsApi } from '../services/api';
+import RichTextEditor from '../components/RichTextEditor';
 
 export default function EditPost() {
   const { id } = useParams();
@@ -87,12 +88,7 @@ export default function EditPost() {
                   <button type="button" onClick={() => setShowPreview((s) => !s)} className="text-xs text-slate-600 hover:underline">{showPreview ? 'Hide preview' : 'Show preview'}</button>
                 </div>
               </div>
-              <textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                rows={12}
-                className="w-full px-3 py-2 border border-slate-300 rounded focus:ring-2 focus:ring-slate-500 font-mono text-sm"
-              />
+              <RichTextEditor content={content} onChange={setContent} />
             </div>
 
             <div>
