@@ -8,10 +8,10 @@ Configure the Pages project with:
 - Build output directory: `dist`
 - Root directory: `frontend`
 - Environment variable: `VITE_API_URL=https://agririseglobal.onrender.com`
-- Environment variable: `CF_PAGES_PROJECT_NAME=<your exact Cloudflare Pages project name>`
+- `frontend/wrangler.toml` contains the exact Pages project name in its `name` field.
 
-If using a custom deploy command, run `npm run deploy:pages`. Wrangler uses
-`CF_PAGES_PROJECT_NAME` to select the Pages project.
+If using a custom deploy command, run `npm run deploy:pages`. The deploy script
+uses the project name from `frontend/wrangler.toml`.
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
