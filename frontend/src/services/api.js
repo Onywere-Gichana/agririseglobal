@@ -1,4 +1,6 @@
 const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+const MAX_RETRIES = 5;
+const RETRY_DELAYS = [1000, 3000, 7000, 12000, 20000];
 
 export const assetUrl = (path) => `${API_BASE}${path}`;
 
@@ -10,6 +12,8 @@ async function request(path, options = {}) {
   const url = `${API_BASE}${path}`;
   const headers = { ...options.headers };
   const token = getToken();
+  const method = options.method || 'GET';
+  const shouldRetry = options.retry ?? method === 'GET';
   if (token) headers.Authorization = `Bearer ${token}`;
   
   // Set Content-Type for POST/PUT requests with body
@@ -19,28 +23,44 @@ async function request(path, options = {}) {
   
   try {
     const fetchOptions = {
-      method: options.method || 'GET',
+      method,
       headers,
       ...(options.body && { body: options.body }),
     };
-    
-    const res = await fetch(url, fetchOptions);
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      const error = { 
-        status: res.status, 
-        error: data.error || data.message || `Server error (${res.status})`,
-        ...data 
-      };
-      console.error('API Error:', error);
-      throw error;
+
+    for (let attempt = 0; attempt <= (shouldRetry ? MAX_RETRIES : 0); attempt += 1) {
+      try {
+        const res = await fetch(url, fetchOptions);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const error = {
+            status: res.status,
+            error: data.error || data.message || `Server error (${res.status})`,
+            message: data.error || data.message || `Server error (${res.status})`,
+            ...data,
+          };
+          if (shouldRetry && [502, 503, 504].includes(res.status) && attempt < MAX_RETRIES) {
+            await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS[attempt]));
+            continue;
+          }
+          console.error('API Error:', error);
+          throw error;
+        }
+        return data;
+      } catch (err) {
+        const isNetworkError = err instanceof TypeError;
+        if (shouldRetry && isNetworkError && attempt < MAX_RETRIES) {
+          await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS[attempt]));
+          continue;
+        }
+        throw err;
+      }
     }
-    return data;
   } catch (err) {
-    // Network error or JSON parse error
-    if (err.name === 'TypeError' && err.message.includes('fetch')) {
+    if (err instanceof TypeError) {
       console.error('Network error:', err);
-      throw { error: 'Cannot connect to server. Make sure the backend is running on port 5000.' };
+      const message = 'Cannot connect to the server. It may be waking up; please try again shortly.';
+      throw { error: message, message };
     }
     throw err;
   }
@@ -48,7 +68,7 @@ async function request(path, options = {}) {
 
 export const authApi = {
   register: (body) => request('/api/auth/register', { method: 'POST', body: JSON.stringify(body) }),
-  login: (body) => request('/api/auth/login', { method: 'POST', body: JSON.stringify(body) }),
+  login: (body) => request('/api/auth/login', { method: 'POST', body: JSON.stringify(body), retry: true }),
   me: () => request('/api/auth/me'),
   createUser: (body) => request('/api/auth/users', { method: 'POST', body: JSON.stringify(body) }),
   listUsers: () => request('/api/auth/users'),

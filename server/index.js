@@ -11,6 +11,7 @@ const uploadRoutes = require('./routes/upload');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+let dbReady = false;
 
 // Render terminates TLS and forwards the original client IP to Express.
 app.set('trust proxy', 1);
@@ -31,6 +32,12 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Bind the port before database initialization so Render can wake the service.
+app.use('/api', (req, res, next) => {
+  if (req.path === '/health' || dbReady) return next();
+  return res.status(503).json({ error: 'Server is starting. Please retry shortly.' });
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/posts', postRoutes);
@@ -39,7 +46,8 @@ app.use('/api/uploads', uploadRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok' });
+  if (!dbReady) return res.status(503).json({ status: 'starting' });
+  return res.json({ status: 'ok' });
 });
 
 // Error handling middleware (must be after routes)
@@ -55,13 +63,17 @@ app.use((err, req, res, next) => {
 
 // Start server
 const start = async () => {
+  const server = app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+
   try {
     await initDb();
-    app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`);
-    });
+    dbReady = true;
+    console.log('Database ready');
   } catch (err) {
     console.error('Failed to start server:', err.message);
+    server.close();
     process.exit(1);
   }
 };
