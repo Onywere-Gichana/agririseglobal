@@ -53,7 +53,12 @@ export default function Blog() {
               <PostCard key={post.id} post={post} />
             ))}
           </div>
-          <Pagination page={data.page} totalPages={data.totalPages} basePath="/blog" />
+          <Pagination
+            page={data.page}
+            totalPages={data.totalPages}
+            basePath="/blog"
+            query={categoryParam !== 'all' ? { category: categoryParam } : {}}
+          />
         </>
       )}
     </main>

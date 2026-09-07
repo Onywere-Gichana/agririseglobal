@@ -10,7 +10,71 @@ const slugify = (text) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '');
 
-  const sanitizeContent = (content) => DOMPurify.sanitize(content, { ADD_ATTR: ['target'] });
+const TEXT_FIELDS_BY_TYPE = {
+  paragraph: ['text'],
+  header: ['text'],
+  quote: ['text', 'caption'],
+  warning: ['title', 'message'],
+  image: ['caption'],
+};
+
+const sanitizeEditorData = (raw) => {
+  let document;
+  try {
+    document = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    // Edit forms may send the JSON document as an already-stringified field.
+    if (typeof document === 'string') {
+      try {
+        document = JSON.parse(document);
+      } catch {
+        document = { time: Date.now(), blocks: [{ type: 'raw', data: { html: document } }] };
+      }
+    }
+  } catch {
+    throw new Error('Invalid content format');
+  }
+  if (!document || !Array.isArray(document.blocks)) throw new Error('Invalid content format');
+
+  return {
+    ...document,
+    blocks: document.blocks.map((block) => {
+      const data = { ...(block.data || {}) };
+      if (block.type === 'raw') {
+        data.html = DOMPurify.sanitize(data.html || '', { ADD_ATTR: ['target'] });
+      } else if (block.type === 'list' || block.type === 'checklist') {
+        data.items = (data.items || []).map((item) => (
+          typeof item === 'string'
+            ? DOMPurify.sanitize(item)
+            : { ...item, text: DOMPurify.sanitize(item.text || item.content || '') }
+        ));
+      } else if (block.type === 'table') {
+        data.content = (data.content || []).map((row) => row.map((cell) => DOMPurify.sanitize(cell || '')));
+      } else {
+        for (const field of TEXT_FIELDS_BY_TYPE[block.type] || []) {
+          if (data[field]) data[field] = DOMPurify.sanitize(data[field], { ADD_ATTR: ['target'] });
+        }
+      }
+
+      if (block.type === 'image' && data.file?.url && !/^https?:\/\//i.test(data.file.url)) data.file.url = '';
+      if (block.type === 'embed' && data.embed && !/^https?:\/\//i.test(data.embed)) data.embed = '';
+      return { ...block, data };
+    }),
+  };
+};
+
+const extractExcerpt = (document, maxLength = 300) => {
+  const parts = [];
+  for (const block of document.blocks) {
+    const data = block.data || {};
+    if (typeof data.text === 'string') parts.push(data.text);
+    if (block.type === 'raw' && data.html) parts.push(data.html);
+    if (Array.isArray(data.items)) {
+      parts.push(data.items.map((item) => typeof item === 'string' ? item : item.text || item.content || '').join(' '));
+    }
+  }
+  const plain = parts.join(' ').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+  return plain.length > maxLength ? `${plain.slice(0, maxLength)}…` : plain;
+};
 
 // Public: list published posts (paginated)
 const getPosts = async (req, res) => {
@@ -21,7 +85,7 @@ const getPosts = async (req, res) => {
     const category = req.query.category;
 
     let countQuery = "SELECT COUNT(*) FROM posts WHERE status = 'published'";
-    let dataQuery = "SELECT id, title, slug, featured_image, category, source, status, created_at, updated_at, LEFT(content, 300) AS excerpt FROM posts WHERE status = 'published'";
+    let dataQuery = "SELECT id, title, slug, featured_image, category, source, status, created_at, updated_at, excerpt FROM posts WHERE status = 'published'";
     const queryParams = [];
 
     if (category && category !== 'all') {
@@ -101,6 +165,13 @@ const createPost = async (req, res) => {
       return res.status(400).json({ error: 'Title and content are required' });
     }
 
+    let document;
+    try {
+      document = sanitizeEditorData(content);
+    } catch {
+      return res.status(400).json({ error: 'Invalid content format' });
+    }
+
     let slug = slugify(title);
     // Ensure unique slug
     const existing = await pool.query('SELECT id FROM posts WHERE slug = $1', [slug]);
@@ -108,10 +179,9 @@ const createPost = async (req, res) => {
       slug = `${slug}-${Date.now()}`;
     }
 
-    const cleanContent = sanitizeContent(content);
     const result = await pool.query(
-      'INSERT INTO posts (title, content, slug, featured_image, category, status, source) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-      [title, cleanContent, slug, featured_image || null, category || 'general', status || 'draft', 'native']
+      'INSERT INTO posts (title, content, excerpt, slug, featured_image, category, status, source) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+      [title, JSON.stringify(document), extractExcerpt(document), slug, featured_image || null, category || 'general', status || 'draft', 'native']
     );
 
     res.status(201).json({ post: result.rows[0] });
@@ -133,14 +203,24 @@ const updatePost = async (req, res) => {
 
     const post = existing.rows[0];
     const newTitle = title || post.title;
-    const newContent = content ? sanitizeContent(content) : post.content;
+    let newContent = post.content;
+    let newExcerpt = post.excerpt || '';
+    if (content) {
+      try {
+        const document = sanitizeEditorData(content);
+        newContent = JSON.stringify(document);
+        newExcerpt = extractExcerpt(document);
+      } catch {
+        return res.status(400).json({ error: 'Invalid content format' });
+      }
+    }
     const newImage = featured_image !== undefined ? featured_image : post.featured_image;
     const newCategory = category !== undefined ? category : (post.category || 'general');
     const newStatus = status || post.status;
 
     const result = await pool.query(
-      'UPDATE posts SET title = $1, content = $2, featured_image = $3, category = $4, status = $5, updated_at = NOW() WHERE id = $6 RETURNING *',
-      [newTitle, newContent, newImage, newCategory, newStatus, id]
+      'UPDATE posts SET title = $1, content = $2, excerpt = $3, featured_image = $4, category = $5, status = $6, updated_at = NOW() WHERE id = $7 RETURNING *',
+      [newTitle, newContent, newExcerpt, newImage, newCategory, newStatus, id]
     );
 
     res.json({ post: result.rows[0] });

@@ -58,6 +58,16 @@ const initDb = async (retries = 5) => {
           END $$;
         `);
 
+        await client.query(`
+          DO $$
+          BEGIN
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name='posts' AND column_name='excerpt') THEN
+              ALTER TABLE posts ADD COLUMN excerpt TEXT DEFAULT '';
+            END IF;
+          END $$;
+        `);
+
         console.log('Database tables initialized successfully');
       } finally {
         client.release();

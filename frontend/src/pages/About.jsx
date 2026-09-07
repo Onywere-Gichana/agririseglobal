@@ -1,3 +1,5 @@
+import { assetUrl } from '../services/api';
+
 export default function About() {
   return (
     <main className="max-w-4xl mx-auto px-4 py-12">
@@ -25,7 +27,7 @@ export default function About() {
 
         <aside className="space-y-4">
           <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-slate-200">
-            <img src="/images/tractor-working-green-field.jpg" alt="Fields" className="w-full h-56 object-cover" />
+            <img src={assetUrl('/api/uploads/object/site/images/tractor-working-green-field.jpg')} alt="Fields" className="w-full h-56 object-cover" />
             <div className="p-4">
               <h3 className="text-lg font-semibold text-slate-800">Why we care</h3>
               <p className="text-slate-600 text-sm mt-2">Small changes in farming technique can make a big difference. We focus on clear advice that anyone can try.</p>

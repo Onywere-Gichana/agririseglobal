@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { assetUrl } from '../services/api';
 
-export default function Navbar() {
+export default function Navbar({ darkMode, onToggleTheme }) {
   const { user, logout } = useAuth();
   const location = useLocation();
   const isAdmin = location.pathname.startsWith('/admin');
@@ -14,7 +15,7 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
             <div className="h-9 w-9 rounded-full overflow-hidden bg-white/10 flex items-center justify-center">
-              <img src="/icon.jpg" alt="Agri Rise Global" className="h-7 w-auto object-contain" />
+              <img src={assetUrl('/api/uploads/object/site/icon.jpg')} alt="Agri Rise Global" className="h-7 w-auto object-contain" />
             </div>
             <span className="font-semibold text-lg hidden sm:inline tracking-wide">Agri Rise Global</span>
           </Link>
@@ -24,6 +25,15 @@ export default function Navbar() {
             <Link to="/" className="px-3 py-2 rounded-md hover:bg-white/10 transition-colors">Home</Link>
             <Link to="/blog" className="px-3 py-2 rounded-md hover:bg-white/10 transition-colors">Blog</Link>
             <Link to="/about" className="px-3 py-2 rounded-md hover:bg-white/10 transition-colors">About</Link>
+            <button
+              type="button"
+              onClick={onToggleTheme}
+              className="px-3 py-2 rounded-md hover:bg-white/10 transition-colors"
+              aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+              title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {darkMode ? 'Light' : 'Dark'}
+            </button>
 
             {user ? (
               <>
@@ -67,6 +77,13 @@ export default function Navbar() {
               <Link to="/" className="px-2 py-2 hover:bg-slate-800 rounded" onClick={() => setMobileMenuOpen(false)}>Home</Link>
               <Link to="/blog" className="px-2 py-2 hover:bg-slate-800 rounded" onClick={() => setMobileMenuOpen(false)}>Blog</Link>
               <Link to="/about" className="px-2 py-2 hover:bg-slate-800 rounded" onClick={() => setMobileMenuOpen(false)}>About</Link>
+              <button
+                type="button"
+                onClick={() => { onToggleTheme(); setMobileMenuOpen(false); }}
+                className="text-left px-2 py-2 hover:bg-slate-800 rounded"
+              >
+                {darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+              </button>
               {user ? (
                 <>
                   <Link to="/admin/dashboard" className="px-2 py-2 hover:bg-slate-800 rounded" onClick={() => setMobileMenuOpen(false)}>Dashboard</Link>

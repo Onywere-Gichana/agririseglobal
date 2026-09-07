@@ -1,8 +1,7 @@
 import { Link } from 'react-router-dom';
 
 export default function PostCard({ post }) {
-  const raw = (post.excerpt || post.content || '').replace(/<[^>]*>/g, '');
-  const excerpt = raw.slice(0, 160) + (raw.length > 160 ? '…' : '');
+  const excerpt = post.excerpt || '';
 
   return (
     <article className="bg-white rounded-xl shadow-md overflow-hidden border border-slate-200 hover:shadow-xl transform hover:-translate-y-1 transition-all">

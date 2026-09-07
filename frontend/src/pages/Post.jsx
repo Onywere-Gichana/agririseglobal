@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { postsApi } from '../services/api';
+import EditorJsRenderer from '../components/EditorJsRenderer';
 
 export default function Post() {
   const { slug } = useParams();
@@ -40,10 +41,7 @@ export default function Post() {
           {new Date(post.created_at).toLocaleDateString()}
           {post.source === 'wordpress' && <span className="ml-2 text-slate-400">· From WordPress</span>}
         </p>
-        <div
-          className="prose prose-slate max-w-none"
-          dangerouslySetInnerHTML={{ __html: post.content }}
-        />
+        <EditorJsRenderer content={post.content} />
       </article>
       <p className="mt-8">
         <Link to="/blog" className="text-blue-600 hover:underline">← Back to blog</Link>

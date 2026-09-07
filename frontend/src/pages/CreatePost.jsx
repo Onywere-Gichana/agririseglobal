@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { postsApi } from '../services/api';
-import RichTextEditor from '../components/RichTextEditor';
+import BlockEditor from '../components/BlockEditor';
+import EditorJsRenderer from '../components/EditorJsRenderer';
+import FeaturedImageField from '../components/FeaturedImageField';
 
 export default function CreatePost() {
   const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState(null);
   const [featuredImage, setFeaturedImage] = useState('');
   const [category, setCategory] = useState('general');
   const [status, setStatus] = useState('draft');
@@ -21,7 +23,7 @@ export default function CreatePost() {
     try {
       await postsApi.create({
         title,
-        content,
+        content: JSON.stringify(content || { time: Date.now(), blocks: [], version: '2.31.0' }),
         featured_image: featuredImage || null,
         category,
         status,
@@ -55,26 +57,16 @@ export default function CreatePost() {
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium text-slate-700">Content (HTML supported)</label>
+                <label className="text-sm font-medium text-slate-700">Story</label>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-500">{content.length} chars</span>
+                  <span className="text-xs text-slate-500">{content?.blocks?.length || 0} blocks</span>
                   <button type="button" onClick={() => setShowPreview((s) => !s)} className="text-xs text-slate-600 hover:underline">{showPreview ? 'Hide preview' : 'Show preview'}</button>
                 </div>
               </div>
-              <RichTextEditor content={content} onChange={setContent} />
+              <BlockEditor content={content} onChange={setContent} />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Featured image URL</label>
-              <input
-                type="url"
-                value={featuredImage}
-                onChange={(e) => setFeaturedImage(e.target.value)}
-                placeholder="https://..."
-                className="w-full px-3 py-2 border border-slate-300 rounded focus:ring-2 focus:ring-slate-500"
-              />
-              <p className="text-xs text-slate-500 mt-2">Paste a direct image URL; it will be shown in the preview.</p>
-            </div>
+            <FeaturedImageField value={featuredImage} onChange={setFeaturedImage} />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -133,11 +125,7 @@ export default function CreatePost() {
             )}
 
             <h3 className="text-lg font-semibold text-slate-800 mb-1">{title || 'Untitled'}</h3>
-            {showPreview ? (
-              <div className="prose prose-slate max-w-none overflow-hidden" dangerouslySetInnerHTML={{ __html: content || '<p><em>No content</em></p>' }} />
-            ) : (
-              <p className="text-sm text-slate-600 line-clamp-6">{(content.replace(/<[^>]*>/g, '').slice(0, 300) + (content.length > 300 ? '…' : ''))}</p>
-            )}
+            {showPreview ? <EditorJsRenderer content={content} /> : <p className="text-sm text-slate-600">{getExcerpt(content) || 'No content yet.'}</p>}
           </div>
 
           <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-100 text-sm text-slate-600">
@@ -149,4 +137,14 @@ export default function CreatePost() {
       </div>
     </main>
   );
+}
+
+function getExcerpt(document) {
+  const text = (document?.blocks || []).map((block) => {
+    const data = block.data || {};
+    if (typeof data.text === 'string') return data.text;
+    if (Array.isArray(data.items)) return data.items.map((item) => typeof item === 'string' ? item : item.text || item.content || '').join(' ');
+    return '';
+  }).join(' ').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+  return text.length > 300 ? `${text.slice(0, 300)}…` : text;
 }

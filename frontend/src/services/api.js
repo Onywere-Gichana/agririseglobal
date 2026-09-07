@@ -1,5 +1,7 @@
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
+export const assetUrl = (path) => `${API_BASE}${path}`;
+
 function getToken() {
   return localStorage.getItem('token');
 }
@@ -77,8 +79,8 @@ export const uploadApi = {
       body: formData,
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw data;
-    return data;
+    if (!res.ok || !data.success) throw data;
+    return { url: data.file.url };
   },
 };
 

@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { assetUrl } from '../services/api';
 
 const images = [
-  '/images/countryside-woman-holding-plant-leaves.jpg',
-  '/images/countryside-workers-out-field.jpg',
-  '/images/happy-cheerful-african-american-farm-worker-holding-crate-full-local-eco-friendly-ripe-leafy-greens-from-sustainable-crop-harvest-entrepreneurial-bio-permaculture-greenhouse-farm.jpg',
-  '/images/strawberry-field.jpg',
-  '/images/tractor-working-green-field.jpg',
-  '/images/truck-working-field-sunny-day.jpg',
-  '/images/woman-working-rural-farming-agriculture-sector-celebrate-women-working-field-labour-day.jpg',
+  assetUrl('/api/uploads/object/site/images/countryside-woman-holding-plant-leaves.jpg'),
+  assetUrl('/api/uploads/object/site/images/countryside-workers-out-field.jpg'),
+  assetUrl('/api/uploads/object/site/images/happy-cheerful-african-american-farm-worker-holding-crate-full-local-eco-friendly-ripe-leafy-greens-from-sustainable-crop-harvest-entrepreneurial-bio-permaculture-greenhouse-farm.jpg'),
+  assetUrl('/api/uploads/object/site/images/strawberry-field.jpg'),
+  assetUrl('/api/uploads/object/site/images/tractor-working-green-field.jpg'),
+  assetUrl('/api/uploads/object/site/images/truck-working-field-sunny-day.jpg'),
+  assetUrl('/api/uploads/object/site/images/woman-working-rural-farming-agriculture-sector-celebrate-women-working-field-labour-day.jpg'),
 ];
 
 const TRANSITION_DURATION = 5000; // 5 seconds per image

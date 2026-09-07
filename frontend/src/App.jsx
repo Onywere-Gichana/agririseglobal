@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -15,12 +16,21 @@ import EditPost from './pages/EditPost';
 import CreateUser from './pages/CreateUser';
 import WordPressSync from './pages/WordPressSync';
 import ProtectedAdminRoute from './components/ProtectedAdminRoute';
+import { assetUrl } from './services/api';
 import './index.css';
 
 function Layout({ children }) {
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', darkMode);
+    localStorage.setItem('theme', darkMode ? 'dark' : 'light');
+    document.querySelector('link[rel="icon"]')?.setAttribute('href', assetUrl('/api/uploads/object/site/icon.jpg'));
+  }, [darkMode]);
+
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
-      <Navbar />
+    <div className="site-shell min-h-screen flex flex-col bg-slate-50">
+      <Navbar darkMode={darkMode} onToggleTheme={() => setDarkMode((current) => !current)} />
       {children}
       <Footer />
     </div>

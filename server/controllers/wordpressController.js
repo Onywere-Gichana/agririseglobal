@@ -1,11 +1,26 @@
 const axios = require('axios');
 const pool = require('../config/db');
+const { JSDOM } = require('jsdom');
+const createDOMPurify = require('dompurify');
+
+const DOMPurify = createDOMPurify(new JSDOM('').window);
 
 const slugify = (text) =>
   text
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '');
+
+const toEditorDocument = (html) => ({
+  time: Date.now(),
+  blocks: [{ type: 'raw', data: { html: DOMPurify.sanitize(html || '', { ADD_ATTR: ['target'] }) } }],
+  version: '2.31.0',
+});
+
+const extractExcerpt = (document) => {
+  const plain = (document.blocks[0]?.data?.html || '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+  return plain.length > 300 ? `${plain.slice(0, 300)}…` : plain;
+};
 
 // Fetch featured image URL from WP media endpoint
 const fetchFeaturedImage = async (mediaId, siteUrl) => {
@@ -47,6 +62,7 @@ const syncFromWordPress = async (req, res) => {
     for (const wp of wpPosts) {
       const title = wp.title.rendered;
       const content = wp.content.rendered;
+      const document = toEditorDocument(content);
       const slug = wp.slug || slugify(title);
       const featuredImage = await fetchFeaturedImage(wp.featured_media, siteUrl);
       const wpPostId = wp.id;
@@ -60,8 +76,8 @@ const syncFromWordPress = async (req, res) => {
 
       if (existing.rows.length > 0) {
         await pool.query(
-          'UPDATE posts SET title = $1, content = $2, featured_image = $3, updated_at = NOW() WHERE wp_post_id = $4',
-          [title, content, featuredImage, wpPostId]
+          'UPDATE posts SET title = $1, content = $2, excerpt = $3, featured_image = $4, updated_at = NOW() WHERE wp_post_id = $5',
+          [title, JSON.stringify(document), extractExcerpt(document), featuredImage, wpPostId]
         );
       } else {
         // Ensure unique slug
@@ -75,8 +91,8 @@ const syncFromWordPress = async (req, res) => {
         let category = 'generic';
 
         await pool.query(
-          "INSERT INTO posts (title, content, slug, featured_image, category, source, wp_post_id, status, created_at) VALUES ($1, $2, $3, $4, $5, 'wordpress', $6, 'draft', $7)",
-          [title, content, finalSlug, featuredImage, category, wpPostId, createdAt]
+          "INSERT INTO posts (title, content, excerpt, slug, featured_image, category, source, wp_post_id, status, created_at) VALUES ($1, $2, $3, $4, $5, $6, 'wordpress', $7, 'draft', $8)",
+          [title, JSON.stringify(document), extractExcerpt(document), finalSlug, featuredImage, category, wpPostId, createdAt]
         );
       }
       synced++;

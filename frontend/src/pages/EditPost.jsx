@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { postsApi } from '../services/api';
-import RichTextEditor from '../components/RichTextEditor';
+import BlockEditor from '../components/BlockEditor';
+import EditorJsRenderer from '../components/EditorJsRenderer';
+import FeaturedImageField from '../components/FeaturedImageField';
 
 export default function EditPost() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [post, setPost] = useState(null);
   const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState(null);
   const [featuredImage, setFeaturedImage] = useState('');
   const [category, setCategory] = useState('general');
   const [status, setStatus] = useState('draft');
@@ -45,7 +47,7 @@ export default function EditPost() {
     try {
       await postsApi.update(id, {
         title,
-        content,
+        content: JSON.stringify(toEditorDocument(content)),
         featured_image: featuredImage || null,
         category,
         status,
@@ -82,26 +84,16 @@ export default function EditPost() {
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium text-slate-700">Content (HTML supported)</label>
+                <label className="text-sm font-medium text-slate-700">Story</label>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-500">{content.length} chars</span>
+                  <span className="text-xs text-slate-500">{content?.blocks?.length || 0} blocks</span>
                   <button type="button" onClick={() => setShowPreview((s) => !s)} className="text-xs text-slate-600 hover:underline">{showPreview ? 'Hide preview' : 'Show preview'}</button>
                 </div>
               </div>
-              <RichTextEditor content={content} onChange={setContent} />
+              {!loadingPost && <BlockEditor key={post?.id} content={content} onChange={setContent} />}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Featured image URL</label>
-              <input
-                type="url"
-                value={featuredImage}
-                onChange={(e) => setFeaturedImage(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded focus:ring-2 focus:ring-slate-500"
-                placeholder="https://..."
-              />
-              <p className="text-xs text-slate-500 mt-2">Paste a direct image URL; it will be shown in the preview.</p>
-            </div>
+            <FeaturedImageField value={featuredImage} onChange={setFeaturedImage} />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -162,11 +154,7 @@ export default function EditPost() {
             <h3 className="text-lg font-semibold text-slate-800 mb-1">{title || 'Untitled'}</h3>
             <p className="text-xs text-slate-500 mb-3">{post?.created_at ? new Date(post.created_at).toLocaleDateString() : ''}</p>
 
-            {showPreview ? (
-              <div className="prose prose-slate max-w-none overflow-hidden" dangerouslySetInnerHTML={{ __html: content || '<p><em>No content</em></p>' }} />
-            ) : (
-              <p className="text-sm text-slate-600 line-clamp-6">{(post?.excerpt || '') || (content.replace(/<[^>]*>/g, '').slice(0, 300) + (content.length > 300 ? '…' : ''))}</p>
-            )}
+            {showPreview ? <EditorJsRenderer content={content} /> : <p className="text-sm text-slate-600">{post?.excerpt || getExcerpt(content) || 'No content yet.'}</p>}
           </div>
 
           <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-100 text-sm text-slate-600">
@@ -178,4 +166,28 @@ export default function EditPost() {
       </div>
     </main>
   );
+}
+
+function toEditorDocument(value) {
+  if (value && typeof value === 'object' && Array.isArray(value.blocks)) return value;
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      if (parsed && Array.isArray(parsed.blocks)) return parsed;
+      if (typeof parsed === 'string') return { time: Date.now(), blocks: [{ type: 'raw', data: { html: parsed } }], version: '2.31.0' };
+    } catch {
+      return { time: Date.now(), blocks: [{ type: 'raw', data: { html: value } }], version: '2.31.0' };
+    }
+  }
+  return { time: Date.now(), blocks: [], version: '2.31.0' };
+}
+
+function getExcerpt(document) {
+  const text = (document?.blocks || []).map((block) => {
+    const data = block.data || {};
+    if (typeof data.text === 'string') return data.text;
+    if (Array.isArray(data.items)) return data.items.map((item) => typeof item === 'string' ? item : item.text || item.content || '').join(' ');
+    return '';
+  }).join(' ').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+  return text.length > 300 ? `${text.slice(0, 300)}…` : text;
 }

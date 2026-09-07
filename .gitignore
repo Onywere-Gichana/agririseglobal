@@ -24,6 +24,4 @@ Thumbs.db
 
 # Docker
 postgres_data/
-
-# Uploaded images
-server/uploads/
+# Runtime media is stored in Cloudflare R2.
