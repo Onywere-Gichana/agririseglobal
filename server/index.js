@@ -2,7 +2,6 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
-const rateLimit = require('express-rate-limit');
 const initDb = require('./config/initDb');
 
 const authRoutes = require('./routes/auth');
@@ -31,13 +30,6 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
-});
-app.use('/api/', limiter);
 
 // Routes
 app.use('/api/auth', authRoutes);
