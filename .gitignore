@@ -21,7 +21,7 @@ npm-debug.log*
 .vscode/
 .DS_Store
 Thumbs.db
-
+.api
 # Docker
 postgres_data/
 # Runtime media is stored in Cloudflare R2.
