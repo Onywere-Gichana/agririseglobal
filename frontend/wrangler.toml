@@ -1,0 +1,3 @@
+# The Pages project name is supplied by CF_PAGES_PROJECT_NAME in deployment settings.
+# Keep this file free of API tokens and other secrets.
+pages_build_output_dir = "dist"
