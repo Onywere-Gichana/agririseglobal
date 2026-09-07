@@ -3,7 +3,6 @@ const crypto = require('crypto');
 const { S3Client } = require('@aws-sdk/client-s3');
 const dotenv = require('dotenv');
 
-dotenv.config({ path: path.join(__dirname, '..', '..', '.env') });
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 const required = ['ACCESS_KEY_ID', 'SECRET_ACCESS_KEY', 'ACCOUNT_ID', 'BUCKET_NAME'];
