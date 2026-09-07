@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "deploy:pages": "npx wrangler pages deploy dist",
     "lint": "eslint .",
     "preview": "vite preview"
   },

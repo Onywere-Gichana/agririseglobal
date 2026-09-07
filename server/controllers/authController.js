@@ -143,4 +143,71 @@ const listUsers = async (req, res) => {
   }
 };
 
-module.exports = { register, login, me, createUser, listUsers };
+// Admin only: update a user's profile, role, or password
+const updateUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { email, name, role, password } = req.body;
+    const existing = await pool.query('SELECT id, email, name, role FROM users WHERE id = $1', [id]);
+    if (existing.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+
+    const current = existing.rows[0];
+    const nextEmail = email?.trim() || current.email;
+    const nextName = name?.trim() || current.name;
+    const nextRole = role === 'admin' || role === 'author' ? role : current.role;
+
+    if (Number(id) === Number(req.user.id) && nextRole !== 'admin') {
+      return res.status(400).json({ error: 'You cannot remove your own admin role' });
+    }
+
+    if (current.role === 'admin' && nextRole !== 'admin') {
+      const admins = await pool.query("SELECT COUNT(*)::int AS count FROM users WHERE role = 'admin'");
+      if (admins.rows[0].count <= 1) return res.status(400).json({ error: 'At least one admin account must remain' });
+    }
+
+    let result;
+    if (password?.trim()) {
+      const passwordHash = await bcrypt.hash(password, 12);
+      result = await pool.query(
+        'UPDATE users SET email = $1, name = $2, role = $3, password_hash = $4 WHERE id = $5 RETURNING id, email, name, role, created_at',
+        [nextEmail, nextName, nextRole, passwordHash, id]
+      );
+    } else {
+      result = await pool.query(
+        'UPDATE users SET email = $1, name = $2, role = $3 WHERE id = $4 RETURNING id, email, name, role, created_at',
+        [nextEmail, nextName, nextRole, id]
+      );
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (err) {
+    if (err.code === '23505') return res.status(409).json({ error: 'Email already in use' });
+    console.error('Update user error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+// Admin only: delete a user, but never the current admin or the last admin
+const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (Number(id) === Number(req.user.id)) {
+      return res.status(400).json({ error: 'You cannot delete your own account' });
+    }
+
+    const existing = await pool.query('SELECT id, role FROM users WHERE id = $1', [id]);
+    if (existing.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    if (existing.rows[0].role === 'admin') {
+      const admins = await pool.query("SELECT COUNT(*)::int AS count FROM users WHERE role = 'admin'");
+      if (admins.rows[0].count <= 1) return res.status(400).json({ error: 'The last admin account cannot be deleted' });
+    }
+
+    await pool.query('DELETE FROM users WHERE id = $1', [id]);
+    res.json({ message: 'User deleted' });
+  } catch (err) {
+    console.error('Delete user error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+module.exports = { register, login, me, createUser, listUsers, updateUser, deleteUser };

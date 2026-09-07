@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { postsApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import UserManagement from '../components/UserManagement';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -192,6 +193,8 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      {isAdmin && <UserManagement currentUserId={user?.id} />}
     </main>
   );
 }

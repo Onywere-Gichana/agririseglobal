@@ -52,6 +52,8 @@ export const authApi = {
   me: () => request('/api/auth/me'),
   createUser: (body) => request('/api/auth/users', { method: 'POST', body: JSON.stringify(body) }),
   listUsers: () => request('/api/auth/users'),
+  updateUser: (id, body) => request(`/api/auth/users/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  deleteUser: (id) => request(`/api/auth/users/${id}`, { method: 'DELETE' }),
 };
 
 export const postsApi = {

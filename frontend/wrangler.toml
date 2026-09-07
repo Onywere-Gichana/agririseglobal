@@ -1,3 +1,0 @@
-# This must exactly match the project name in Cloudflare Pages.
-name = "agririseglobal"
-pages_build_output_dir = "dist"
