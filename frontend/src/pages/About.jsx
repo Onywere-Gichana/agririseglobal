@@ -16,7 +16,6 @@ export default function About() {
             <li>• Practical how-to guides and crop management tips</li>
             <li>• Product reviews and sourcing for farming inputs</li>
             <li>• Educational resources and community-focused content</li>
-            <li>• Optional WordPress import support for migrating content</li>
           </ul>
 
           <div className="mt-6 flex flex-col sm:flex-row gap-3">
