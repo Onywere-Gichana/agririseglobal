@@ -8,6 +8,7 @@ export const assetUrl = (path) => {
   if (!path) return path;
   const value = String(path).trim();
   if (/^https?:\/\//i.test(value)) return value;
+  if (/^data:image\//i.test(value)) return value;
   if (value.startsWith('//')) return `https:${value}`;
   const objectPath = '/api/uploads/object/';
   if (STORAGE_BASE && value.startsWith(objectPath)) {
