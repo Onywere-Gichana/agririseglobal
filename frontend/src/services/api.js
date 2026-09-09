@@ -1,8 +1,15 @@
 const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+const STORAGE_BASE = (import.meta.env.VITE_R2_PUBLIC_URL || '').replace(/\/$/, '');
 const MAX_RETRIES = 5;
 const RETRY_DELAYS = [1000, 3000, 7000, 12000, 20000];
 
-export const assetUrl = (path) => `${API_BASE}${path}`;
+export const assetUrl = (path) => {
+  const objectPath = '/api/uploads/object/';
+  if (STORAGE_BASE && path.startsWith(objectPath)) {
+    return `${STORAGE_BASE}/uploads/${path.slice(objectPath.length)}`;
+  }
+  return `${API_BASE}${path}`;
+};
 
 function getToken() {
   return localStorage.getItem('token');

@@ -6,6 +6,7 @@
     "dev": "nodemon index.js",
     "start": "node index.js",
     "migrate:editorjs": "node scripts/migrateContentToEditorJs.js",
+    "migrate:storage-urls": "node scripts/migrateStorageUrls.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
