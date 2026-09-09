@@ -91,6 +91,64 @@ html.dark .editorjs-shell {
   margin: 1.75rem 0;
 }
 
+.editorjs-renderer figure.editorjs-image-align-left {
+  text-align: left;
+}
+
+.editorjs-renderer figure.editorjs-image-align-center {
+  text-align: center;
+}
+
+.editorjs-renderer figure.editorjs-image-align-right {
+  text-align: right;
+}
+
+.editorjs-renderer figure.editorjs-image-size-small img {
+  width: 32%;
+}
+
+.editorjs-renderer figure.editorjs-image-size-medium img {
+  width: 64%;
+}
+
+.editorjs-renderer figure.editorjs-image-size-large img {
+  width: 82%;
+}
+
+.editorjs-renderer figure.editorjs-image-size-full img {
+  width: 100%;
+}
+
+.editorjs-renderer figure.editorjs-image-with-border img {
+  border: 1px solid #cbd5e1;
+}
+
+.editorjs-renderer figure.editorjs-image-with-background {
+  padding: 1rem;
+  background: #f1f5f9;
+}
+
+.image-layout-tune {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem;
+}
+
+.image-layout-tune__label {
+  color: #64748b;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.image-layout-tune__select {
+  border: 1px solid #cbd5e1;
+  border-radius: 0.25rem;
+  color: #334155;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.35rem;
+}
+
 .editorjs-renderer figcaption {
   color: #64748b;
   font-size: 0.875rem;

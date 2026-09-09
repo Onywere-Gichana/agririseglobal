@@ -65,7 +65,12 @@ function Block({ block }) {
     case 'table':
       return <Table data={data} />;
     case 'image':
-      return <figure><img src={data.file?.url} alt={data.caption || ''} /><figcaption>{data.caption && <InlineHtml html={data.caption} />}</figcaption></figure>;
+      return (
+        <figure className={imageClassName(data, block.tunes)}>
+          <img src={data.file?.url} alt={data.caption || ''} />
+          {data.caption && <figcaption><InlineHtml html={data.caption} /></figcaption>}
+        </figure>
+      );
     case 'embed':
       return data.embed ? <div className="editorjs-embed"><iframe src={data.embed} title={data.caption || 'Embedded media'} allowFullScreen /></div> : null;
     case 'raw':
@@ -73,6 +78,18 @@ function Block({ block }) {
     default:
       return null;
   }
+}
+
+function imageClassName(data, tunes = {}) {
+  const layout = tunes.imageLayout || data.imageLayout || data.tunes?.imageLayout || {};
+  const classes = [
+    `editorjs-image-align-${layout.alignment || 'center'}`,
+    `editorjs-image-size-${layout.width || (data.stretched ? 'full' : 'medium')}`,
+  ];
+
+  if (data.withBorder) classes.push('editorjs-image-with-border');
+  if (data.withBackground) classes.push('editorjs-image-with-background');
+  return classes.join(' ');
 }
 
 function itemText(item) {
