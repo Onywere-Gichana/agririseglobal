@@ -5,6 +5,8 @@ const MAX_RETRIES = 5;
 const RETRY_DELAYS = [1000, 3000, 7000, 12000, 20000];
 
 export const assetUrl = (path) => {
+  if (!path) return path;
+  if (/^https?:\/\//i.test(path)) return path;
   const objectPath = '/api/uploads/object/';
   if (STORAGE_BASE && path.startsWith(objectPath)) {
     return `${STORAGE_BASE}/${path.slice(objectPath.length)}`;
