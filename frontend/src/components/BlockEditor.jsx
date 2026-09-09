@@ -14,7 +14,6 @@ import Checklist from '@editorjs/checklist';
 import Marker from '@editorjs/marker';
 import InlineCode from '@editorjs/inline-code';
 import { uploadApi } from '../services/api';
-import ImageLayoutTune from './ImageLayoutTune';
 
 const EMPTY_DOCUMENT = { time: Date.now(), blocks: [], version: '2.31.0' };
 
@@ -85,7 +84,6 @@ export default function BlockEditor({ content, onChange, placeholder = 'Start wr
         },
         image: {
           class: ImageTool,
-          tunes: ['imageLayout'],
           config: {
             uploader: imageUploader,
             captionPlaceholder: 'Add a caption or photo credit',
@@ -97,9 +95,6 @@ export default function BlockEditor({ content, onChange, placeholder = 'Start wr
             },
           },
         },
-      },
-      tunes: {
-        imageLayout: ImageLayoutTune,
       },
       onChange: async () => {
         const saved = await editor.save();
