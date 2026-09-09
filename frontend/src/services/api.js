@@ -6,7 +6,7 @@ const RETRY_DELAYS = [1000, 3000, 7000, 12000, 20000];
 export const assetUrl = (path) => {
   const objectPath = '/api/uploads/object/';
   if (STORAGE_BASE && path.startsWith(objectPath)) {
-    return `${STORAGE_BASE}/uploads/${path.slice(objectPath.length)}`;
+    return `${STORAGE_BASE}/${path.slice(objectPath.length)}`;
   }
   return `${API_BASE}${path}`;
 };

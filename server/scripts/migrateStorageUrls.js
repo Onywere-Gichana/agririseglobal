@@ -10,9 +10,10 @@ function migrateUrl(value) {
 
   let migrated = value;
   if (serverBaseUrl) {
-    migrated = migrated.replaceAll(`${serverBaseUrl}/api/uploads/object/`, `${publicBaseUrl}/uploads/`);
+    migrated = migrated.replaceAll(`${serverBaseUrl}/api/uploads/object/`, `${publicBaseUrl}/`);
   }
-  return migrated.replaceAll('/api/uploads/object/', `${publicBaseUrl}/uploads/`);
+  migrated = migrated.replaceAll('/api/uploads/object/', `${publicBaseUrl}/`);
+  return migrated.replaceAll(`${publicBaseUrl}/uploads/uploads/`, `${publicBaseUrl}/uploads/`);
 }
 
 function migrateContent(value) {
