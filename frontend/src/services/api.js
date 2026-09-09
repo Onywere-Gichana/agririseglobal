@@ -6,12 +6,14 @@ const RETRY_DELAYS = [1000, 3000, 7000, 12000, 20000];
 
 export const assetUrl = (path) => {
   if (!path) return path;
-  if (/^https?:\/\//i.test(path)) return path;
+  const value = String(path).trim();
+  if (/^https?:\/\//i.test(value)) return value;
+  if (value.startsWith('//')) return `https:${value}`;
   const objectPath = '/api/uploads/object/';
-  if (STORAGE_BASE && path.startsWith(objectPath)) {
-    return `${STORAGE_BASE}/${path.slice(objectPath.length)}`;
+  if (STORAGE_BASE && value.startsWith(objectPath)) {
+    return `${STORAGE_BASE}/${value.slice(objectPath.length)}`;
   }
-  return `${API_BASE}${path}`;
+  return `${API_BASE}${value}`;
 };
 
 export const shareUrl = (slug) => `${SHARE_BASE}/share/${encodeURIComponent(slug)}`;

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { uploadApi } from '../services/api';
+import { assetUrl, uploadApi } from '../services/api';
 
 export default function FeaturedImageField({ value, onChange }) {
   const fileInputRef = useRef(null);
@@ -55,7 +55,7 @@ export default function FeaturedImageField({ value, onChange }) {
       <p className="text-xs text-slate-500 mt-2">Paste a direct image URL or upload an image from your device.</p>
       {error && <p className="text-xs text-red-600 mt-2">{error}</p>}
       {value && (
-        <img src={value} alt="Featured image preview" className="mt-3 w-full max-h-48 object-cover rounded-md border border-slate-200" />
+          <img src={assetUrl(value)} alt="Featured image preview" className="mt-3 w-full max-h-48 object-cover rounded-md border border-slate-200" />
       )}
     </div>
   );
