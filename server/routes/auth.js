@@ -1,12 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const { register, login, me, createUser, listUsers, updateUser, deleteUser } = require('../controllers/authController');
+const { register, login, me, updateProfile, getPublicProfile, createUser, listUsers, updateUser, deleteUser } = require('../controllers/authController');
 const auth = require('../middleware/auth');
 const admin = require('../middleware/admin');
 
 router.post('/register', register); // Only for first admin
 router.post('/login', login);
 router.get('/me', auth, me);
+router.put('/me', auth, updateProfile);
+router.get('/profile/:id', getPublicProfile);
 
 // Admin only routes
 router.post('/users', admin, createUser);

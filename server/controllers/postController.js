@@ -76,6 +76,8 @@ const extractExcerpt = (document, maxLength = 300) => {
   return plain.length > maxLength ? `${plain.slice(0, maxLength)}…` : plain;
 };
 
+const canManagePost = (user, post) => user?.role === 'admin' || Number(post.user_id) === Number(user?.id);
+
 // Public: list published posts (paginated)
 const getPosts = async (req, res) => {
   try {
@@ -85,12 +87,12 @@ const getPosts = async (req, res) => {
     const category = req.query.category;
 
     let countQuery = "SELECT COUNT(*) FROM posts WHERE status = 'published'";
-    let dataQuery = "SELECT id, title, slug, featured_image, category, source, status, created_at, updated_at, excerpt FROM posts WHERE status = 'published'";
+    let dataQuery = "SELECT p.id, p.title, p.slug, p.featured_image, p.category, p.source, p.status, p.created_at, p.updated_at, p.excerpt, u.id AS author_id, u.name AS author_name, u.profile_image AS author_profile_image, u.bio AS author_bio, u.location AS author_location FROM posts p LEFT JOIN users u ON u.id = p.user_id WHERE p.status = 'published'";
     const queryParams = [];
 
     if (category && category !== 'all') {
       countQuery += " AND category = $1";
-      dataQuery += " AND category = $1";
+      dataQuery += " AND p.category = $1";
       queryParams.push(category);
     }
 
@@ -117,7 +119,7 @@ const getPosts = async (req, res) => {
 const getPostBySlug = async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT * FROM posts WHERE slug = $1 AND status = 'published'",
+      "SELECT p.*, u.id AS author_id, u.name AS author_name, u.email AS author_email, u.profile_image AS author_profile_image, u.bio AS author_bio, u.location AS author_location FROM posts p LEFT JOIN users u ON u.id = p.user_id WHERE p.slug = $1 AND p.status = 'published'",
       [req.params.slug]
     );
     if (result.rows.length === 0) {
@@ -132,8 +134,12 @@ const getPostBySlug = async (req, res) => {
 // Admin: list all posts (including drafts)
 const getAllPosts = async (req, res) => {
   try {
+    const query = req.user.role === 'admin'
+      ? 'SELECT p.id, p.title, p.slug, p.featured_image, p.category, p.source, p.status, p.created_at, p.updated_at, p.user_id, u.name AS author_name FROM posts p LEFT JOIN users u ON u.id = p.user_id ORDER BY p.created_at DESC'
+      : 'SELECT p.id, p.title, p.slug, p.featured_image, p.category, p.source, p.status, p.created_at, p.updated_at, p.user_id, u.name AS author_name FROM posts p LEFT JOIN users u ON u.id = p.user_id WHERE p.user_id = $1 ORDER BY p.created_at DESC';
     const result = await pool.query(
-      'SELECT id, title, slug, featured_image, category, source, status, created_at, updated_at FROM posts ORDER BY created_at DESC'
+      query,
+      req.user.role === 'admin' ? [] : [req.user.id]
     );
     res.json({ posts: result.rows });
   } catch (err) {
@@ -151,6 +157,7 @@ const getPostById = async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Post not found' });
     }
+    if (!canManagePost(req.user, result.rows[0])) return res.status(403).json({ error: 'You can only manage your own posts' });
     res.json({ post: result.rows[0] });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -180,8 +187,8 @@ const createPost = async (req, res) => {
     }
 
     const result = await pool.query(
-      'INSERT INTO posts (title, content, excerpt, slug, featured_image, category, status, source) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
-      [title, JSON.stringify(document), extractExcerpt(document), slug, featured_image || null, category || 'general', status || 'draft', 'native']
+      'INSERT INTO posts (title, content, excerpt, slug, featured_image, category, status, source, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *',
+      [title, JSON.stringify(document), extractExcerpt(document), slug, featured_image || null, category || 'general', status || 'draft', 'native', req.user.id]
     );
 
     res.status(201).json({ post: result.rows[0] });
@@ -202,6 +209,7 @@ const updatePost = async (req, res) => {
     }
 
     const post = existing.rows[0];
+    if (!canManagePost(req.user, post)) return res.status(403).json({ error: 'You can only edit your own posts' });
     const newTitle = title || post.title;
     let newContent = post.content;
     let newExcerpt = post.excerpt || '';
@@ -232,6 +240,9 @@ const updatePost = async (req, res) => {
 // Admin: delete post
 const deletePost = async (req, res) => {
   try {
+    const existing = await pool.query('SELECT user_id FROM posts WHERE id = $1', [req.params.id]);
+    if (existing.rows.length === 0) return res.status(404).json({ error: 'Post not found' });
+    if (!canManagePost(req.user, existing.rows[0])) return res.status(403).json({ error: 'You can only delete your own posts' });
     const result = await pool.query(
       'DELETE FROM posts WHERE id = $1 RETURNING id',
       [req.params.id]

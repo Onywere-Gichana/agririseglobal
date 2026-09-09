@@ -10,7 +10,6 @@ export const assetUrl = (path) => {
   }
   return `${API_BASE}${path}`;
 };
-
 function getToken() {
   return localStorage.getItem('token');
 }
@@ -77,6 +76,8 @@ export const authApi = {
   register: (body) => request('/api/auth/register', { method: 'POST', body: JSON.stringify(body) }),
   login: (body) => request('/api/auth/login', { method: 'POST', body: JSON.stringify(body), retry: true }),
   me: () => request('/api/auth/me'),
+  updateProfile: (body) => request('/api/auth/me', { method: 'PUT', body: JSON.stringify(body) }),
+  getProfile: (id) => request(`/api/auth/profile/${id}`),
   createUser: (body) => request('/api/auth/users', { method: 'POST', body: JSON.stringify(body) }),
   listUsers: () => request('/api/auth/users'),
   updateUser: (id, body) => request(`/api/auth/users/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
@@ -113,6 +114,3 @@ export const uploadApi = {
   },
 };
 
-export const wordpressApi = {
-  sync: () => request('/api/wordpress/sync', { method: 'POST' }),
-};

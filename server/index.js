@@ -6,7 +6,6 @@ const initDb = require('./config/initDb');
 
 const authRoutes = require('./routes/auth');
 const postRoutes = require('./routes/posts');
-const wordpressRoutes = require('./routes/wordpress');
 const uploadRoutes = require('./routes/upload');
 
 const app = express();
@@ -41,7 +40,6 @@ app.use('/api', (req, res, next) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/posts', postRoutes);
-app.use('/api/wordpress', wordpressRoutes);
 app.use('/api/uploads', uploadRoutes);
 
 // Health check

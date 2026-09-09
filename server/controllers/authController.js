@@ -72,7 +72,7 @@ const login = async (req, res) => {
 
     res.json({
       token,
-      user: { id: user.id, email: user.email, name: user.name, role: user.role },
+      user: { id: user.id, email: user.email, name: user.name, role: user.role, profile_image: user.profile_image, bio: user.bio, location: user.location },
     });
   } catch (err) {
     console.error('Login error:', err.message);
@@ -87,12 +87,39 @@ const login = async (req, res) => {
 const me = async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, email, name, role, created_at FROM users WHERE id = $1',
+      'SELECT id, email, name, role, profile_image, bio, location, created_at FROM users WHERE id = $1',
       [req.user.id]
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
+    res.json({ user: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+const updateProfile = async (req, res) => {
+  try {
+    const { name, profile_image, bio, location } = req.body;
+    const result = await pool.query(
+      'UPDATE users SET name = COALESCE(NULLIF($1, \'\'), name), profile_image = $2, bio = $3, location = $4 WHERE id = $5 RETURNING id, email, name, role, profile_image, bio, location, created_at',
+      [name?.trim(), profile_image || null, bio || '', location?.trim() || null, req.user.id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    res.json({ user: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+const getPublicProfile = async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT id, name, profile_image, bio, location, created_at FROM users WHERE id = $1',
+      [req.params.id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Profile not found' });
     res.json({ user: result.rows[0] });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -134,7 +161,7 @@ const createUser = async (req, res) => {
 const listUsers = async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, email, name, role, created_at FROM users ORDER BY created_at DESC'
+      'SELECT id, email, name, role, profile_image, bio, location, created_at FROM users ORDER BY created_at DESC'
     );
     res.json({ users: result.rows });
   } catch (err) {
@@ -202,6 +229,7 @@ const deleteUser = async (req, res) => {
       if (admins.rows[0].count <= 1) return res.status(400).json({ error: 'The last admin account cannot be deleted' });
     }
 
+    await pool.query('UPDATE posts SET user_id = $1 WHERE user_id = $2', [req.user.id, id]);
     await pool.query('DELETE FROM users WHERE id = $1', [id]);
     res.json({ message: 'User deleted' });
   } catch (err) {
@@ -210,4 +238,4 @@ const deleteUser = async (req, res) => {
   }
 };
 
-module.exports = { register, login, me, createUser, listUsers, updateUser, deleteUser };
+module.exports = { register, login, me, updateProfile, getPublicProfile, createUser, listUsers, updateUser, deleteUser };

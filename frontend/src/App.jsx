@@ -14,7 +14,8 @@ import Dashboard from './pages/Dashboard';
 import CreatePost from './pages/CreatePost';
 import EditPost from './pages/EditPost';
 import CreateUser from './pages/CreateUser';
-import WordPressSync from './pages/WordPressSync';
+import Profile from './pages/Profile';
+import UserProfile from './pages/UserProfile';
 import ProtectedAdminRoute from './components/ProtectedAdminRoute';
 import { assetUrl } from './services/api';
 import './index.css';
@@ -45,6 +46,7 @@ export default function App() {
           <Route path="/" element={<Layout><Home /></Layout>} />
           <Route path="/blog" element={<Layout><Blog /></Layout>} />
           <Route path="/blog/:slug" element={<Layout><Post /></Layout>} />
+          <Route path="/users/:id" element={<Layout><UserProfile /></Layout>} />
           <Route path="/about" element={<Layout><About /></Layout>} />
           <Route path="/admin/login" element={<Layout><Login /></Layout>} />
           <Route path="/admin/register" element={<Layout><Register /></Layout>} />
@@ -81,11 +83,9 @@ export default function App() {
             }
           />
           <Route
-            path="/admin/wordpress"
+            path="/admin/profile"
             element={
-              <Layout>
-                <ProtectedRoute><WordPressSync /></ProtectedRoute>
-              </Layout>
+              <Layout><ProtectedRoute><Profile /></ProtectedRoute></Layout>
             }
           />
           <Route path="*" element={<Navigate to="/" replace />} />

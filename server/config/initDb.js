@@ -13,9 +13,27 @@ const initDb = async (retries = 5) => {
             email VARCHAR(255) UNIQUE NOT NULL,
             password_hash VARCHAR(255) NOT NULL,
             name VARCHAR(255) NOT NULL,
+            profile_image TEXT,
+            bio TEXT DEFAULT '',
+            location VARCHAR(255),
             role VARCHAR(20) DEFAULT 'author' CHECK (role IN ('admin', 'author')),
             created_at TIMESTAMP DEFAULT NOW()
           );
+        `);
+
+        await client.query(`
+          DO $$
+          BEGIN
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='profile_image') THEN
+              ALTER TABLE users ADD COLUMN profile_image TEXT;
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='bio') THEN
+              ALTER TABLE users ADD COLUMN bio TEXT DEFAULT '';
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='location') THEN
+              ALTER TABLE users ADD COLUMN location VARCHAR(255);
+            END IF;
+          END $$;
         `);
 
         // Add role column if it doesn't exist (for existing databases)
@@ -41,10 +59,27 @@ const initDb = async (retries = 5) => {
             category VARCHAR(50) DEFAULT 'general',
             source VARCHAR(20) DEFAULT 'native' CHECK (source IN ('native', 'wordpress')),
             wp_post_id INTEGER,
+            user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
             status VARCHAR(20) DEFAULT 'draft' CHECK (status IN ('draft', 'published')),
             created_at TIMESTAMP DEFAULT NOW(),
             updated_at TIMESTAMP DEFAULT NOW()
           );
+        `);
+
+        await client.query(`
+          DO $$
+          BEGIN
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='posts' AND column_name='user_id') THEN
+              ALTER TABLE posts ADD COLUMN user_id INTEGER REFERENCES users(id) ON DELETE SET NULL;
+            END IF;
+          END $$;
+        `);
+
+        await client.query(`
+          UPDATE posts
+          SET user_id = (SELECT id FROM users WHERE role = 'admin' ORDER BY id LIMIT 1)
+          WHERE user_id IS NULL
+            AND EXISTS (SELECT 1 FROM users WHERE role = 'admin');
         `);
 
         // Add category column if it doesn't exist (for existing databases)

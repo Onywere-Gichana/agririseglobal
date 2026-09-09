@@ -19,6 +19,16 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, []);
 
+  const handleDelete = async (post) => {
+    if (!window.confirm(`Delete "${post.title}"? This cannot be undone.`)) return;
+    try {
+      await postsApi.delete(post.id);
+      setPosts((current) => current.filter((item) => item.id !== post.id));
+    } catch (err) {
+      setError(err.error || err.message || 'Failed to delete post');
+    }
+  };
+
   const published = posts.filter((p) => p.status === 'published').length;
   const drafts = posts.filter((p) => p.status === 'draft').length;
   const byCategory = posts.reduce((acc, post) => {
@@ -40,21 +50,13 @@ export default function Dashboard() {
             className="px-5 py-2.5 bg-slate-800 text-white rounded-lg font-medium hover:bg-slate-700 shadow-sm transition-colors"
           >
             + New Post
-          </Link>
+            </Link>
           {isAdmin && (
-            <Link
-              to="/admin/users/new"
-              className="px-5 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 shadow-sm transition-colors"
-            >
+            <Link to="/admin/users/new" className="px-5 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 shadow-sm transition-colors">
               Create User
             </Link>
           )}
-          <Link
-            to="/admin/wordpress"
-            className="px-5 py-2.5 bg-slate-200 text-slate-800 rounded-lg font-medium hover:bg-slate-300 shadow-sm transition-colors"
-          >
-            WordPress Sync
-          </Link>
+          <Link to="/admin/profile" className="px-5 py-2.5 bg-slate-200 text-slate-800 rounded-lg font-medium hover:bg-slate-300 transition-colors">Edit Profile</Link>
         </div>
       </div>
 
@@ -153,9 +155,7 @@ export default function Dashboard() {
                   <tr key={post.id} className={`border-t border-slate-100 hover:bg-slate-50 transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
                     <td className="py-4 px-6">
                       <div className="font-medium text-slate-800">{post.title}</div>
-                      {post.source === 'wordpress' && (
-                        <span className="text-xs text-slate-400 mt-1">From WordPress</span>
-                      )}
+                      <span className="text-xs text-slate-400 mt-1 block">By {post.author_name || 'Admin'}</span>
                     </td>
                     <td className="py-4 px-6">
                       <span className="px-2 py-1 bg-slate-100 text-slate-700 rounded text-xs font-medium">
@@ -185,6 +185,7 @@ export default function Dashboard() {
                       >
                         Edit
                       </Link>
+                      <button type="button" onClick={() => handleDelete(post)} className="ml-2 inline-block px-3 py-1.5 bg-red-50 text-red-600 rounded hover:bg-red-100 text-sm font-medium transition-colors">Delete</button>
                     </td>
                   </tr>
                 ))}
