@@ -1,5 +1,6 @@
 const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 const STORAGE_BASE = (import.meta.env.VITE_R2_PUBLIC_URL || '').replace(/\/$/, '');
+const SHARE_BASE = (import.meta.env.VITE_SHARE_BASE_URL || API_BASE).replace(/\/$/, '');
 const MAX_RETRIES = 5;
 const RETRY_DELAYS = [1000, 3000, 7000, 12000, 20000];
 
@@ -10,6 +11,8 @@ export const assetUrl = (path) => {
   }
   return `${API_BASE}${path}`;
 };
+
+export const shareUrl = (slug) => `${SHARE_BASE}/share/${encodeURIComponent(slug)}`;
 function getToken() {
   return localStorage.getItem('token');
 }

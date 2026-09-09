@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { postsApi } from '../services/api';
+import { assetUrl, postsApi, shareUrl } from '../services/api';
 import EditorJsRenderer from '../components/EditorJsRenderer';
 
 function AuthorAvatar({ image, name }) {
@@ -12,6 +12,7 @@ export default function Post() {
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -30,6 +31,43 @@ export default function Post() {
     return () => { cancelled = true; };
   }, [slug]);
 
+  useEffect(() => {
+    if (!post) return undefined;
+    const description = post.excerpt || `Read ${post.title} on Agri Rise Global`;
+    const imageUrl = post.featured_image ? assetUrl(post.featured_image) : '';
+    document.title = `${post.title} | Agri Rise Global`;
+    const tags = [
+      ['description', description],
+      ['og:title', post.title, 'property'],
+      ['og:description', description, 'property'],
+      ['og:type', 'article', 'property'],
+      ['og:url', window.location.href, 'property'],
+      ['twitter:card', post.featured_image ? 'summary_large_image' : 'summary'],
+      ['twitter:title', post.title],
+      ['twitter:description', description],
+    ];
+    if (imageUrl) tags.push(['og:image', imageUrl, 'property'], ['twitter:image', imageUrl]);
+    const elements = tags.map(([name, content, attribute = 'name']) => {
+      const element = document.createElement('meta');
+      element.setAttribute(attribute, name);
+      element.setAttribute('content', content);
+      document.head.appendChild(element);
+      return element;
+    });
+    return () => {
+      elements.forEach((element) => element.remove());
+      document.title = 'Agri Rise Global';
+    };
+  }, [post]);
+
+  const articleUrl = post ? shareUrl(post.slug) : '';
+  const shareText = post ? `${post.title} - Agri Rise Global` : '';
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(articleUrl);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
+  };
+
   if (loading) return <main className="max-w-3xl mx-auto px-4 py-12"><p className="text-slate-500">Loading...</p></main>;
   if (error) return <main className="max-w-3xl mx-auto px-4 py-12"><p className="text-red-600">{error}</p><Link to="/blog" className="text-blue-600 hover:underline">Back to blog</Link></main>;
   if (!post) return null;
@@ -38,12 +76,19 @@ export default function Post() {
     <main className="max-w-3xl mx-auto px-4 py-12">
       <article>
         {post.featured_image && (
-          <img src={post.featured_image} alt={post.title} className="w-full rounded-lg shadow-md mb-6" />
+          <img src={assetUrl(post.featured_image)} alt={post.title} className="w-full rounded-lg shadow-md mb-6" />
         )}
         <h1 className="text-3xl font-bold text-slate-800 mb-2">{post.title}</h1>
         <div className="flex items-center gap-3 text-slate-500 text-sm mb-6">
           {post.author_id ? <Link to={`/users/${post.author_id}`} title={`View ${post.author_name || 'author'}'s profile`}><AuthorAvatar image={post.author_profile_image} name={post.author_name} /></Link> : <AuthorAvatar name="Admin" />}
           <span>By {post.author_name || 'Admin'} &middot; {new Date(post.created_at).toLocaleDateString()}</span>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 mb-8 p-4 bg-emerald-50 border border-emerald-100 rounded-xl">
+          <span className="text-sm font-semibold text-slate-700 mr-1">Share this article</span>
+          <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(articleUrl)}`} target="_blank" rel="noopener noreferrer" className="px-3 py-2 rounded-lg bg-[#1877F2] text-white text-sm font-medium hover:opacity-90">Facebook</a>
+          <a href={`https://wa.me/?text=${encodeURIComponent(`${shareText} ${articleUrl}`)}`} target="_blank" rel="noopener noreferrer" className="px-3 py-2 rounded-lg bg-[#25D366] text-white text-sm font-medium hover:opacity-90">WhatsApp</a>
+          <button type="button" onClick={handleCopy} className="px-3 py-2 rounded-lg bg-white border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">{copied ? 'Copied' : 'Copy link'}</button>
+          {navigator.share && <button type="button" onClick={() => navigator.share({ title: post.title, text: shareText, url: articleUrl })} className="px-3 py-2 rounded-lg bg-slate-800 text-white text-sm font-medium hover:bg-slate-700">More</button>}
         </div>
         <EditorJsRenderer content={post.content} />
       </article>

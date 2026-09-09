@@ -7,6 +7,7 @@ const initDb = require('./config/initDb');
 const authRoutes = require('./routes/auth');
 const postRoutes = require('./routes/posts');
 const uploadRoutes = require('./routes/upload');
+const { sharePost } = require('./controllers/shareController');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -38,6 +39,7 @@ app.use('/api', (req, res, next) => {
 });
 
 // Routes
+app.get('/share/:slug', sharePost);
 app.use('/api/auth', authRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/uploads', uploadRoutes);
