@@ -91,6 +91,16 @@ html.dark .editorjs-shell {
   margin: 1.75rem 0;
 }
 
+.editorjs-preserve-whitespace {
+  white-space: pre-wrap;
+}
+
+.editorjs-delimiter {
+  border: 0;
+  border-top: 2px solid #cbd5e1;
+  margin: 2rem 0;
+}
+
 .editorjs-renderer figure.editorjs-image-align-left {
   text-align: left;
 }

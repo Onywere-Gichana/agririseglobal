@@ -35,13 +35,13 @@ function Block({ block }) {
   switch (block.type) {
     case 'header': {
       const Tag = `h${Math.min(Math.max(Number(data.level) || 2, 2), 4)}`;
-      return <Tag><InlineHtml html={data.text} /></Tag>;
+      return <Tag className="editorjs-preserve-whitespace"><InlineHtml html={data.text} /></Tag>;
     }
     case 'paragraph':
-      return <p><InlineHtml html={data.text} /></p>;
+      return <p className="editorjs-preserve-whitespace"><InlineHtml html={data.text} /></p>;
     case 'list': {
       const Tag = data.style === 'ordered' ? 'ol' : 'ul';
-      return <Tag>{(data.items || []).map((item, index) => <li key={index}><InlineHtml html={itemText(item)} /></li>)}</Tag>;
+      return <Tag>{(data.items || []).map((item, index) => <li key={index} className="editorjs-preserve-whitespace"><InlineHtml html={itemText(item)} /></li>)}</Tag>;
     }
     case 'checklist':
       return (
@@ -49,19 +49,19 @@ function Block({ block }) {
           {(data.items || []).map((item, index) => (
             <li key={index}>
               <input type="checkbox" checked={Boolean(item.checked)} readOnly />
-              <InlineHtml html={item.text || ''} />
+              <span className="editorjs-preserve-whitespace"><InlineHtml html={item.text || ''} /></span>
             </li>
           ))}
         </ul>
       );
     case 'quote':
-      return <blockquote><p><InlineHtml html={data.text} /></p>{data.caption && <cite><InlineHtml html={data.caption} /></cite>}</blockquote>;
+      return <blockquote><p className="editorjs-preserve-whitespace"><InlineHtml html={data.text} /></p>{data.caption && <cite className="editorjs-preserve-whitespace"><InlineHtml html={data.caption} /></cite>}</blockquote>;
     case 'warning':
-      return <aside className="editorjs-warning"><strong>{data.title}</strong><p>{data.message}</p></aside>;
+      return <aside className="editorjs-warning"><strong className="editorjs-preserve-whitespace"><InlineHtml html={data.title} /></strong><p className="editorjs-preserve-whitespace"><InlineHtml html={data.message} /></p></aside>;
     case 'delimiter':
-      return <hr />;
+      return <hr className="editorjs-delimiter" />;
     case 'code':
-      return <pre><code>{data.code || ''}</code></pre>;
+      return <pre className="editorjs-preserve-whitespace"><code>{data.code || ''}</code></pre>;
     case 'table':
       return <Table data={data} />;
     case 'image':
@@ -102,7 +102,7 @@ function Table({ data }) {
       <table>
         <tbody>
           {(data.content || []).map((row, rowIndex) => (
-            <tr key={rowIndex}>{row.map((cell, cellIndex) => <td key={cellIndex}><InlineHtml html={cell} /></td>)}</tr>
+            <tr key={rowIndex}>{row.map((cell, cellIndex) => <td key={cellIndex} className="editorjs-preserve-whitespace"><InlineHtml html={cell} /></td>)}</tr>
           ))}
         </tbody>
       </table>

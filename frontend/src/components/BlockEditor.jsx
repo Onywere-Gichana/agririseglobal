@@ -54,6 +54,7 @@ export default function BlockEditor({ content, onChange, placeholder = 'Start wr
   const holderRef = useRef(null);
   const editorRef = useRef(null);
   const onChangeRef = useRef(onChange);
+  const changeVersionRef = useRef(0);
   onChangeRef.current = onChange;
 
   useEffect(() => {
@@ -100,8 +101,9 @@ export default function BlockEditor({ content, onChange, placeholder = 'Start wr
         imageLayout: ImageLayoutTune,
       },
       onChange: async () => {
+        const changeVersion = ++changeVersionRef.current;
         const saved = await editor.save();
-        onChangeRef.current?.(saved);
+        if (changeVersion === changeVersionRef.current) onChangeRef.current?.(saved);
       },
     });
 
